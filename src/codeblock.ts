@@ -1,7 +1,7 @@
 import { App, MarkdownPostProcessorContext, MarkdownRenderChild, Notice, parseYaml, setIcon, TFile } from "obsidian";
 import { Core } from "cytoscape";
 import { RelationsSettings, PositionStore, EdgeLabelStore, RelationshipType } from "./types";
-import { buildFullGraph, buildLocalGraph, buildConnectedGraph, buildFamilyNeighborhood, filterGraphByTypes, localSubgraph } from "./graph";
+import { buildFullGraph, buildLocalGraph, buildConnectedGraph, buildFamilyNeighborhood, filterGraphByTypes, localSubgraph, applyMutedNodes, filterGraphByNodeProperties, mutedLegendEntries } from "./graph";
 import { renderGraph, synthesizeInformalPartnerships, INFORMAL_PARTNERSHIP_LEGEND } from "./render";
 import { renderFilterPanel } from "./filter-panel";
 import type { GraphCache } from "./graph-cache";
@@ -236,6 +236,19 @@ class RelationsBlockChild extends MarkdownRenderChild {
 		// host/center note is kept even if filtering would otherwise isolate it.
 		graph = filterGraphByTypes(graph, new Set(this.settings.disabledTypes), highlightId);
 
+		// Node status: Mute applies everywhere (it never removes anything, so it
+		// can never fragment a family tree). Hide is skipped whenever this block
+		// is actually rendering as a family-tree/family-graph view — keyed on
+		// this.options.familyMode directly, not on which function built the
+		// graph, since scope: full/connected explicitly combined with a family
+		// mode routes through the scope==="full"/buildConnectedGraph branches
+		// above rather than buildFamilyNeighborhood, but still renders as a
+		// family view and must still keep dead ancestors visible.
+		graph = applyMutedNodes(graph, this.settings.statusRules);
+		if (!this.options.familyMode) {
+			graph = filterGraphByNodeProperties(graph, this.settings.statusRules, highlightId);
+		}
+
 		if (graph.nodes.length === 0) {
 			canvas.createDiv({
 				cls: "relations-empty",
@@ -282,9 +295,14 @@ class RelationsBlockChild extends MarkdownRenderChild {
 			if (this.options.familyMode && synthesizeInformalPartnerships(graph).length > 0) {
 				legendTypes.push(INFORMAL_PARTNERSHIP_LEGEND);
 			}
-			if (legendTypes.length > 0) {
+			// Mute-color swatches only show up when a muted node bearing that
+			// color is actually present in this block's graph right now — not
+			// just because a mute rule with that color exists in settings.
+			const muteEntries = mutedLegendEntries(graph, this.settings.statusRules);
+			if (legendTypes.length > 0 || muteEntries.length > 0) {
 				const legend = el.createDiv({ cls: "relations-legend" });
 				renderLegend(legend, legendTypes);
+				renderMuteLegend(legend, muteEntries);
 			}
 		}
 
@@ -406,6 +424,32 @@ function renderLegendItem(
 	if (t.pair) label += " ⚭";
 	if (t.treeLayout) label += " ⊥";
 	item.createSpan({ text: label });
+}
+
+/**
+ * Render Node status mute-color legend entries (see mutedLegendEntries in
+ * graph.ts) into `host`. Uses a filled-dot swatch, not the line swatch
+ * `renderLegendItem` uses for relationship types — mute is a node fill/tint,
+ * not an edge style, so a line would misrepresent what the color means.
+ *
+ * Entries are wrapped in their own `relations-legend-status` row (flex-basis:
+ * 100%) rather than appended as direct children of `host` — `host` is a
+ * wrapping flex container, so bare children can drift onto whatever
+ * connector-type row still has room instead of starting their own line below
+ * the connector-type legend.
+ */
+export function renderMuteLegend(
+	host: HTMLElement,
+	entries: { label: string; color: string }[],
+): void {
+	if (entries.length === 0) return;
+	const row = host.createDiv({ cls: "relations-legend-status" });
+	for (const entry of entries) {
+		const item = row.createDiv({ cls: "relations-legend-item" });
+		const swatch = item.createSpan({ cls: "relations-legend-swatch is-dot" });
+		swatch.style.setProperty("--swatch-color", entry.color);
+		item.createSpan({ text: entry.label });
+	}
 }
 
 /**
