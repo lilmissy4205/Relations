@@ -20,6 +20,9 @@ interface CodeBlockOptions {
 	                        // partnership dotted, parent→child arrowed) — the original
 	                        // graph-style view. "tree": orthogonal SVG connectors for a
 	                        // true family-tree look.
+	keepRelationships?: boolean;  // only meaningful alongside familyMode. By default family
+	                        // views show only genealogy + pair edges; set this to keep every
+	                        // relationship type visible alongside the family layout/connectors.
 	zoom?: number;
 	height?: string;          // overrides the size's default height; e.g. "800px", "60vh"
 	labels?: boolean;         // show note name under each node; overrides the global
@@ -194,7 +197,11 @@ class RelationsBlockChild extends MarkdownRenderChild {
 
 		// Both `full` and `connected` override family-mode's automatic
 		// neighbourhood narrowing — they're explicit user requests for
-		// "give me more than just the bloodline."
+		// "give me more than just the bloodline." `keepRelationships` does NOT
+		// bypass the neighbourhood narrowing itself (that's still the right node
+		// boundary — ancestors/descendants/co-parents/partners); it's threaded
+		// into buildFamilyNeighborhood below so non-family edges stay visible
+		// between whichever nodes are already in that neighbourhood.
 		const useFamilyNeighbourhood = this.options.familyMode
 			&& this.options.scope !== "full"
 			&& this.options.scope !== "connected";
@@ -205,7 +212,7 @@ class RelationsBlockChild extends MarkdownRenderChild {
 				return;
 			}
 			const familyDepth = this.options.depthExplicit ? effectiveDepth : undefined;
-			graph = buildFamilyNeighborhood(this.app, this.settings, hostFile.path, familyDepth, this.cache);
+			graph = buildFamilyNeighborhood(this.app, this.settings, hostFile.path, familyDepth, this.cache, this.options.keepRelationships);
 			highlightId = hostFile.path;
 		} else if (this.options.scope === "full") {
 			graph = buildFullGraph(this.app, this.settings, this.cache);
@@ -260,6 +267,7 @@ class RelationsBlockChild extends MarkdownRenderChild {
 			highlightId,
 			useTreeLayout: this.options.tree,
 			familyMode: this.options.familyMode,
+			keepRelationships: this.options.keepRelationships,
 			compact: effectiveSize === "mini",
 			zoomMultiplier: this.options.zoom,
 			showLabels: this.options.labels,
@@ -279,7 +287,7 @@ class RelationsBlockChild extends MarkdownRenderChild {
 			// Both family modes synthesize a dotted-grey "informal partnership" line
 			// between co-parents with no declared spouse. It isn't a configured type,
 			// so document it explicitly when the graph actually contains one.
-			if (this.options.familyMode && synthesizeInformalPartnerships(graph).length > 0) {
+			if (this.options.familyMode && synthesizeInformalPartnerships(graph, this.options.keepRelationships).length > 0) {
 				legendTypes.push(INFORMAL_PARTNERSHIP_LEGEND);
 			}
 			if (legendTypes.length > 0) {
@@ -455,6 +463,15 @@ export function resolveFamilyMode(parsed: Record<string, unknown>): "graph" | "t
 	return undefined;
 }
 
+/**
+ * Resolve the `keep-relationships`/`keepRelationships` flag: only meaningful alongside
+ * a family mode. Keeps every relationship type visible in a family view instead of
+ * filtering down to genealogy + pair edges. Pure so it can be unit-tested directly.
+ */
+export function resolveKeepRelationships(parsed: Record<string, unknown>): boolean {
+	return parsed["keep-relationships"] === true || parsed["keepRelationships"] === true;
+}
+
 function parseOptions(source: string): ParsedOptions {
 	let parsed: Record<string, unknown> = {};
 	try {
@@ -484,6 +501,7 @@ function parseOptions(source: string): ParsedOptions {
 		"local";
 	const tree = parsed["tree"] === true;
 	const familyMode = resolveFamilyMode(parsed);
+	const keepRelationships = resolveKeepRelationships(parsed);
 	const center = typeof parsed["center"] === "string" ? parsed["center"] : undefined;
 
 	// labels: explicit true/false hides or shows note names for this block,
@@ -540,7 +558,7 @@ function parseOptions(source: string): ParsedOptions {
 			? String(rawId)
 			: undefined;
 
-	return { ...DEFAULTS, size, depth, scope, tree, familyMode, center, zoom, height, labels, spacing, id, sizeExplicit, depthExplicit };
+	return { ...DEFAULTS, size, depth, scope, tree, familyMode, keepRelationships, center, zoom, height, labels, spacing, id, sizeExplicit, depthExplicit };
 }
 
 function resolveHostFile(app: App, hostPath: string, sourcePath: string): TFile | null {

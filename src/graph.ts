@@ -338,6 +338,7 @@ export function buildFamilyNeighborhood(
 	focusPath: string,
 	depth?: number,
 	cache: GraphCache | null = null,
+	keepAllEdgeTypes = false,
 ): RelationsGraph {
 	const full = buildFullGraph(app, settings, cache);
 
@@ -350,13 +351,20 @@ export function buildFamilyNeighborhood(
 		return { nodes: [], edges: [] };
 	}
 
-	return filterFamilyNeighborhood(full, focusPath, depth);
+	return filterFamilyNeighborhood(full, focusPath, depth, keepAllEdgeTypes);
 }
 
+/**
+ * `keepAllEdgeTypes`, when true, keeps every relationship type between nodes already
+ * in the neighborhood (not just genealogy + pair). Node membership itself is always
+ * still determined by genealogy/pair reachability — a non-family edge never pulls in
+ * a new person, it only stays visible once both its endpoints are already in scope.
+ */
 export function filterFamilyNeighborhood(
 	full: RelationsGraph,
 	focusPath: string,
 	depth?: number,
+	keepAllEdgeTypes = false,
 ): RelationsGraph {
 	if (!full.nodes.some((n) => n.id === focusPath)) {
 		return { nodes: [], edges: [] };
@@ -433,7 +441,7 @@ export function filterFamilyNeighborhood(
 
 	const nodes = full.nodes.filter((n) => included.has(n.id));
 	const edges = full.edges.filter(
-		(e) => (e.genealogy || e.pair) && included.has(e.source) && included.has(e.target),
+		(e) => (keepAllEdgeTypes || e.genealogy || e.pair) && included.has(e.source) && included.has(e.target),
 	);
 
 	return { nodes, edges };
