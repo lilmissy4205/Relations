@@ -220,11 +220,12 @@ export function buildFullGraph(
 					if (!inScope(resolved, settings)) continue;
 					targetId = resolved.path;
 				} else {
-					// A note that doesn't exist yet (issue #18). Only real
-					// `[[links]]` count, matching what Obsidian itself treats as
-					// an unresolved link — a plain-text value like `ally: TBD`
-					// isn't a link to anything.
-					if (!settings.showMissingNotes || !wikilink || !target) continue;
+						// A note that doesn't exist yet (issue #18). By default only real
+						// `[[links]]` count, matching what Obsidian itself treats as an
+						// unresolved link. `showMissingPlainText` opts in plain names too
+						// (`children: [Oren Miller]`); they never get a nickname, since the
+						// plain form has no alias syntax.
+						if (!settings.showMissingNotes || (!wikilink && !settings.showMissingPlainText) || !target) continue;
 					targetId = missingNodeId(target);
 					if (!missingNotes.has(targetId)) {
 						missingNotes.set(targetId, { linkText: target, linkSource: file.path });

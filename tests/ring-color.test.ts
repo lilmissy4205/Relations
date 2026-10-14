@@ -34,6 +34,7 @@ function makeSettings(
 		disabledTypes: [],
 		showNodeLabels: true,
 		showMissingNotes: true,
+		showMissingPlainText: false,
 		localGraphDepth: 2,
 		animateLayout: true,
 		ringColorProperty: property,

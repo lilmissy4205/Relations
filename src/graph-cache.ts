@@ -91,5 +91,6 @@ function hashSettings(s: RelationsSettings): string {
 		subtext: s.subtextProperty,
 		// Missing-note nodes are created (or not) during the scan.
 		missing: s.showMissingNotes,
+		missingPlain: s.showMissingPlainText,
 	});
 }

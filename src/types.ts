@@ -69,6 +69,9 @@ export interface RelationsSettings {
 	// nodes (issue #18), the way Obsidian's own graph shows unresolved links.
 	// Off = such links are ignored, as before 0.28.0.
 	showMissingNotes: boolean;
+	// Also show plain-text names (no [[ ]]) that match no note as missing
+	// nodes. Only has an effect while showMissingNotes is on. Off by default.
+	showMissingPlainText: boolean;
 
 	// Local graph: how many hops out from the active note
 	localGraphDepth: number;
@@ -135,6 +138,7 @@ export const DEFAULT_SETTINGS: RelationsSettings = {
 	disabledTypes: [],
 	showNodeLabels: true,
 	showMissingNotes: true,
+	showMissingPlainText: false,
 	localGraphDepth: 2,
 	animateLayout: true,
 	ringColorProperty: "",

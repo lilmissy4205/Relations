@@ -215,11 +215,13 @@ but there's no Gorlois note yet. Gorlois still shows up on the graph as a **fade
 
 **Good to know**
 
-- Only real links in `[[ ]]` do this. Plain words like `enemy: Nobody` don't make a circle.
+- Only real links in `[[ ]]` do this. Plain words like `enemy: Nobody` don't make a circle, unless you switch on **Also for plain names (no [[ ]])** (see below).
 - `[[gorlois]]` and `[[Gorlois]]` are the same missing note, so you only get one circle.
 - Right-click the circle for **Create note in new tab**.
 - Don't want them? Turn off **Show notes that don't exist yet** in **Settings → Relations**.
 - If you use **Required tags**, missing notes are hidden, because a note that doesn't exist can't have a tag.
+
+**Plain names too (optional).** If you write names without `[[ ]]`, for example `children: [Oren Miller]`, turn on **Also for plain names (no [[ ]])** right under **Show notes that don't exist yet** in **Settings → Relations**. Names with no note then get a faded circle too, and `Oren Miller` and `[[Oren Miller]]` share one circle. Heads up: values like `enemy: Nobody` or `ally: TBD` will become circles as well. Plain names can't have nicknames.
 
 ## Family views
 

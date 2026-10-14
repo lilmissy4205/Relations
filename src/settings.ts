@@ -145,6 +145,17 @@ export class RelationsSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
+			.setName("Also for plain names (no [[ ]])")
+			.setDesc("Also show a faded circle for names written without [[ ]], like children: Oren Miller. Careful: values such as enemy: Nobody or ally: TBD will become circles too. Needs \"Show notes that don't exist yet\" to be on.")
+			.addToggle((t) => t
+				.setValue(this.plugin.settings.showMissingPlainText)
+				.onChange(async (v) => {
+					this.plugin.settings.showMissingPlainText = v;
+					await this.plugin.saveSettings();
+					this.plugin.refreshGraphView();
+				}));
+
+		new Setting(containerEl)
 			.setName("Animate layout")
 			.setDesc("When on, nodes settle into place with a brief animation when a graph first opens. Turn off to have nodes appear in their final positions immediately — useful on slower hardware or if the animation feels distracting.")
 			.addToggle((t) => t
